@@ -1,7 +1,7 @@
 // 오프라인 캐시: 앱 파일을 저장해 두고, 새 버전이 있으면 다음 실행 때 반영
-const VERSION = "saju-v2.0.0";
+const VERSION = "saju-v2.1.0";
 const FILES = ["./", "index.html", "manifest.webmanifest", "css/app.css",
-  "js/app.js", "js/core.js", "js/analysis.js", "js/fortune.js", "js/calib.js", "js/reading.js",
+  "js/app.js", "js/core.js", "js/analysis.js", "js/fortune.js", "js/calib.js", "js/reading.js", "js/extras.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

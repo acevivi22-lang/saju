@@ -58,6 +58,7 @@
     <div class="chips scroll" id="flowCats" role="group" aria-label="보고 싶은 운"></div>
     <div class="card"><h3>대운 · 10년 단위</h3><div class="hscroll"><div class="dwrow" id="dwRow"></div></div></div>
     <div class="card"><h3 id="yrTitle">세운 · 해마다</h3><div id="yrChart"></div></div>
+    <div class="card"><h3 id="mlTitle">월별 운세</h3><ul class="mlist" id="mlList"></ul></div>
     <div class="card"><h3 id="moTitle">월운 · 앞으로 24개월</h3><div id="moChart"></div></div>
     <div class="card"><h3 id="elTitle">지금의 오행</h3><div class="layers" id="layers"></div><div id="elRows"></div><ul class="notes" id="elNotes"></ul>
       <p class="muted small">가중치: 원국 글자 1, 대운 천간 1·지지 2, 세운 0.6, 월운 0.4, 일진 0.3. 합·충으로 오행이 바뀌는 경우는 반영하지 않은 단순 합산이에요.</p></div>
@@ -71,6 +72,7 @@
 
   <!-- 상담 -->
   <section class="view" id="v-ask" data-view="ask" hidden>
+    <div class="chips" id="askMode"></div>
     <div class="thread" id="thread"></div>
     <div class="qchips" id="qchips"></div>
   </section>

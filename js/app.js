@@ -2,7 +2,8 @@ import { STEM, STEM_KO, BR, BR_KO, ANIMAL, EL_KO, EL_HAN, BR_EL, BR_MAIN, HIDDEN
   computeChart, pillarsAt, monthsOfSajuYear, daewoonAt, isClash, isHarmony } from "./core.js";
 import { analyze, gyeokguk, sinsalAndRelations, positions, stageOf, GROUP_KO } from "./analysis.js";
 import { CATS, GOOD, CARE, LAYERS, gradeOf, dayFortune, monthFortune, yearFortune, daewoonFortune, upcomingMonths, dwPillar } from "./fortune.js";
-import { sections, QUESTIONS, answer, GOD, scoreChip, ELX } from "./reading.js";
+import { sections, QUESTIONS, answer, GOD, scoreChip, ELX, BOOST } from "./reading.js";
+import { iljuReading, luckyToday, hoursOfDay, dayKeywords, monthLines, compatibility, compatHtml } from "./extras.js";
 
 const $ = id => document.getElementById(id);
 const KEY = "saju.v2";
@@ -22,7 +23,7 @@ function saveStore() { try { localStorage.setItem(KEY, JSON.stringify(store)); }
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 let store = loadStore();
-const st = { tab: "today", view: todayKST(), calCat: "total", flowCat: "total", todayCat: "total", layerOn: { natal: true, dw: true, yr: true, mo: true, dy: true }, thread: [] };
+const st = { tab: "today", view: todayKST(), calCat: "total", flowCat: "total", todayCat: "total", layerOn: { natal: true, dw: true, yr: true, mo: true, dy: true }, thread: [], askMode: "q", partner: null };
 let ctx = null;
 
 function todayKST() { const d = new Date(Date.now() + 9 * 3600000); return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; }
@@ -55,6 +56,7 @@ function renderHeader() {
 }
 
 // ---------- 오늘 ----------
+const WD = ["일","월","화","수","목","금","토"];
 function renderToday() {
   const { c, a } = ctx, ds = c.day[0];
   const [y, m, d] = st.view;
@@ -71,47 +73,73 @@ function renderToday() {
   }).join("");
   const crow = k => {
     const v = f.s[k.id], gg = gradeOf(v, k.t === "ca");
-    return `<button type="button" class="catrow${k.t === "ca" ? " care" : ""}" data-tcat="${k.id}" style="border:none;background:${sel === k.id ? "var(--bg)" : "none"};border-radius:8px;padding:3px 4px;cursor:pointer;text-align:left"><span class="n">${k.name}</span><span class="track${k.t === "ca" ? " care" : ""}"><i style="width:${v}%"></i></span><span class="v">${v}</span>${dots(gg.lv, k.t === "ca")}</button>`;
+    return `<button type="button" class="catrow${k.t === "ca" ? " care" : ""}${sel === k.id ? " on" : ""}" data-tcat="${k.id}"><span class="n">${k.name}</span><span class="track${k.t === "ca" ? " care" : ""}"><i style="width:${v}%"></i></span><span class="v">${v}</span>${dots(gg.lv, k.t === "ca")}</button>`;
   };
   const goods = GOOD.filter(k => f.s[k.id] >= 66).sort((x, y) => f.s[y.id] - f.s[x.id]).slice(0, 3);
   const cares = CARE.filter(k => f.s[k.id] >= 66).sort((x, y) => f.s[y.id] - f.s[x.id]);
   const why = [["일진", f.layers.dy.why], ["월운", f.layers.mo.why], ["세운", f.layers.yr.why], ["대운", f.layers.dw.why]].filter(x => x[1].length);
-  // 원국에 없는 오행 채움
   const lack = [0,1,2,3,4].filter(e => a.counts[e] === 0);
   const fill = lack.filter(e => [stemEl(f.P.day[0]), BR_EL[f.P.day[1]]].includes(e));
+  const lk = luckyToday(c, a, f.P);
+  const hrs = hoursOfDay(c, a, f.P);
+  const hBest = hrs.slice().sort((x, z) => z.s.total - x.s.total).slice(0, 2);
+  const hWorst = hrs.slice().sort((x, z) => x.s.total - z.s.total)[0];
+  const week = [];
+  for (let i = 0; i < 7; i++) { const t = new Date(Date.UTC(y, m - 1, d + i)); week.push(dayFortune(c, a, t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate())); }
 
   $("todayBody").innerHTML = `
   <div class="card">
     <div class="hero">
       <div class="gz">${pillarGlyphs(f.P.day)}<small>${pko(f.P.day)}일</small></div>
       <div>
-        <div class="eyebrow">${isToday ? "오늘" : `${m}월 ${d}일`} · ${dg}의 날 · ${GOD[dg].kw}</div>
-        <div class="big"><b>${f.s.total}</b><span>/ 100 · ${g.name}</span></div>
-        ${dots(g.lv)}
+        <div class="eyebrow">${isToday ? "오늘" : `${m}월 ${d}일`} · ${dg}의 날</div>
+        <div class="big"><b class="word g${g.lv}">${g.name}</b><span>${f.s.total}점</span></div>
+        <div class="kw">${dayKeywords(dg).map(k => `<span>#${k}</span>`).join("")}</div>
       </div>
     </div>
     <p>${GOD[dg].day}${dgb !== dg ? ` 바탕에는 ${dgb}(${GOD[dgb].kw})의 기운이 깔려 있어요.` : ""}</p>
     ${fill.length ? `<p class="small">원국에 없는 ${fill.map(ELX).join("·")} 기운이 들어와 평소 부족한 부분이 채워지는 날이에요.</p>` : ""}
-  </div>
-
-  <div class="card">
-    <h3>점수 구성 · ${catOf(sel).name}</h3>
-    <div class="lrows">${lrows}</div>
-    <p class="explain">${catOf(sel).name} ${f.s[sel]}점은 대운 20% · 세운 25% · 월운 25% · 일진 30%를 합쳐 낸 점수예요. 80점 이상은 네 층이 모두 받쳐줄 때만 나와서, 해가 바뀌면 같은 일진이라도 점수가 달라집니다.${f.dw.pre ? " *대운 시작 전이라 월주를 대신 썼어요." : ""}</p>
-  </div>
-
-  <div class="card">
-    <h3>분야별 <span class="muted small" style="font-weight:400">· 누르면 위에 층별 점수가 보여요</span></h3>
-    <div class="catrows">${CATS.filter(k => k.t === "do").map(crow).join("")}</div>
-    <div class="hr"></div>
-    <div class="catrows">${CARE.map(crow).join("")}</div>
     <div class="todo">
-      ${goods.length ? `<p><b>하면 좋은 일</b> · ${goods.map(k => `${k.name}(${k.tip})`).join(", ")}</p>` : `<p class="muted">눈에 띄게 강한 분야가 없는 평범한 날이에요. 하던 일을 꾸준히 하면 됩니다.</p>`}
-      ${cares.length ? `<p class="ca"><b>조심할 일</b> · ${cares.map(k => `${k.name}(${k.tip})`).join(", ")}</p>` : ""}
+      ${goods.length ? `<p><b>이런 일 하기 좋아요</b> · ${goods.map(k => k.tip).join(" / ")}</p>` : `<p class="muted">특별히 튀는 기운 없이 평범한 날이에요. 하던 일을 꾸준히 하면 됩니다.</p>`}
+      ${cares.length ? `<p class="ca"><b>이건 조심하세요</b> · ${cares.map(k => k.tip).join(" / ")}</p>` : ""}
     </div>
   </div>
 
-  ${why.length ? `<div class="card"><h3>이 날 작용하는 것</h3><ul class="notes">${why.map(([n, w]) => `<li><b>${n}</b> ${w.join(", ")}</li>`).join("")}</ul></div>` : ""}`;
+  <div class="card">
+    <h3>오늘의 행운</h3>
+    <div class="lucky">
+      <div><span>색</span><b>${lk.color}</b></div>
+      <div><span>숫자</span><b>${lk.nums.join(", ")}</b></div>
+      <div><span>방향</span><b>${lk.dir}</b></div>
+      <div><span>음식</span><b>${lk.food}</b></div>
+      <div><span>소품</span><b>${lk.item}</b></div>
+    </div>
+    <p class="muted small">이 사주에 가장 필요한 ${ELX(lk.main)} 기운을 채우는 것들이에요. ${lk.helpToday ? "오늘은 일진도 반가운 기운이라 효과가 더 좋아요." : ""}</p>
+  </div>
+
+  <div class="card">
+    <h3>시간대별 운</h3>
+    <p><b>좋은 시간</b> · ${hBest.map(h => `${h.label} (${BR_KO[h.hb]}시, ${h.god})`).join(", ")}</p>
+    <p class="ca"><b>피하면 좋은 시간</b> · ${hWorst.label} (${BR_KO[hWorst.hb]}시)${hWorst.why.length ? ` — ${hWorst.why[0]}` : ""}</p>
+    <div class="hours">${hrs.map(h => { const gg = gradeOf(h.s.total); return `<div class="hr1"><i class="g${gg.lv}"></i><span>${BR_KO[h.hb]}</span></div>`; }).join("")}</div>
+    <p class="muted small">중요한 연락·미팅·결제는 좋은 시간에 맞추면 좋아요. 시진은 한국 표준시 기준(자시 23:30~01:30)이에요.</p>
+  </div>
+
+  <div class="card">
+    <h3>이번 주 흐름</h3>
+    <div class="week">${week.map((w, i) => { const gg = gradeOf(w.s.total); const wd = new Date(Date.UTC(w.y, w.m - 1, w.d)).getUTCDay(); const gd = tenGod(ds, w.P.day[0]); return `<button type="button" class="wk${i === 0 ? " on" : ""}" data-date="${fmt(w.y, w.m, w.d)}"><span class="${wd === 0 ? "sun" : ""}">${WD[wd]} ${w.d}</span><i class="g${gg.lv}"></i><b>${gg.name}</b><small>${dayKeywords(gd)[0]}</small></button>`; }).join("")}</div>
+  </div>
+
+  <details class="sec"><summary>점수 자세히 보기</summary><div class="body">
+    <h3>점수 구성 · ${catOf(sel).name}</h3>
+    <div class="lrows">${lrows}</div>
+    <p class="explain">${catOf(sel).name} ${f.s[sel]}점은 대운 20% · 세운 25% · 월운 25% · 일진 30%를 합친 점수예요. 80점 이상은 네 층이 모두 받쳐줄 때만 나와요.${f.dw.pre ? " *대운 시작 전이라 월주를 대신 썼어요." : ""}</p>
+    <h3>분야별 <span class="muted small" style="font-weight:400">· 누르면 위 구성이 바뀌어요</span></h3>
+    <div class="catrows">${CATS.filter(k => k.t === "do").map(crow).join("")}</div>
+    <div class="hr"></div>
+    <div class="catrows">${CARE.map(crow).join("")}</div>
+    ${why.length ? `<h3>이 날 작용하는 것</h3><ul class="notes">${why.map(([n, w]) => `<li><b>${n}</b> ${w.join(", ")}</li>`).join("")}</ul>` : ""}
+  </div></details>`;
 }
 
 // ---------- 달력 ----------
@@ -174,6 +202,9 @@ function renderFlow() {
   const yrs = []; for (let Y = nowY - 2; Y <= nowY + 9; Y++) { const f = yearFortune(c, a, Y); yrs.push({ v: f.s[cat], label: `'${String(Y).slice(2)}`, now: Y === nowY, title: `${Y}년 ${pname(f.pillar)} ${f.s[cat]}점` }); }
   $("yrTitle").textContent = `세운 · ${cn} · ${nowY - 2}~${nowY + 9}년`;
   $("yrChart").innerHTML = bars(yrs, care) + `<p class="muted small">대운(40%)과 세운(60%)을 합친 해 점수예요.</p>`;
+  const ml = monthLines(c, a, nowY);
+  $("mlTitle").textContent = `${nowY}년 월별 운세`;
+  $("mlList").innerHTML = ml.map(x => { const g = gradeOf(x.f.s.total); const cur = x.mo.start <= pillarsAt(ty, tm, td).jd && pillarsAt(ty, tm, td).jd < x.mo.end; return `<li class="${cur ? "now" : ""}"><div class="mh"><b>${x.mo.startDate.m}월</b><span class="muted small">${x.mo.startDate.m}/${x.mo.startDate.d}~ ${pname(x.mo.pillar)}</span><span class="word g${g.lv}">${g.name}</span></div><p>${x.txt}</p><p class="small muted">잘 풀리는 쪽: ${x.best.name}${x.f.s[x.care.id] >= 66 ? ` · 조심: ${x.care.name}` : ""}${x.notes.length ? ` · ${x.notes.join(", ")}` : ""}</p></li>`; }).join("");
   const ms = upcomingMonths(c, a, ty, tm, td, 24);
   $("moTitle").textContent = `월운 · ${cn} · 앞으로 24개월`;
   $("moChart").innerHTML = bars(ms.map((f, i) => ({ v: f.s[cat], label: `${f.mo.startDate.m}월`, now: i === 0, title: `${f.mo.startDate.y}.${f.mo.startDate.m}.${f.mo.startDate.d}~ ${pname(f.mo.pillar)}월 ${f.s[cat]}점` })), care, true) +
@@ -229,12 +260,29 @@ function renderRead() {
     </table></div>
     ${sr.rel.length ? `<h4>원국 안의 합·충·형</h4><ul class="rel">${sr.rel.map(r => `<li><b>${r.tag}</b> ${r.txt}</li>`).join("")}</ul>` : `<p class="small muted">원국 안에 눈에 띄는 합·충·형이 없어 구조가 안정적인 편이에요.</p>`}
     <p class="muted small">공망: ${sr.gongmang.map(b => BR[b]).join(" ")} · 천을귀인(돕는 사람) · 문창(공부·글) · 도화(매력) · 역마(이동) · 화개(학문·예술) · 양인·괴강(강한 추진력) · 백호(강한 기운, 사고 조심) · 공망(그 자리가 비거나 늦게 채워짐)</p>`;
-  const secs = sections(ctx);
+  const il = iljuReading(c);
+  const secs = [{ title: `일주 풀이 · ${il.name}`, html: il.html }, ...sections(ctx)];
   $("readBody").innerHTML = secs.map((s, i) => `<details class="sec" ${i < 2 ? "open" : ""}><summary>${s.title}</summary><div class="body">${s.html}</div></details>`).join("");
 }
 
 // ---------- 상담 ----------
 function renderAsk() {
+  $("askMode").innerHTML = `<button type="button" class="chip" data-mode="q" aria-pressed="${st.askMode === "q"}">질문하기</button><button type="button" class="chip" data-mode="match" aria-pressed="${st.askMode === "match"}">궁합 보기</button>`;
+  $("qchips").hidden = st.askMode !== "q";
+  if (st.askMode === "match") {
+    const others = store.profiles.filter(p => p.id !== ctx.p.id);
+    if (!others.length) {
+      $("thread").innerHTML = `<div class="card"><h3>궁합 보기</h3><p>궁합을 보려면 상대방 생년월일이 필요해요. 오른쪽 위 사람 버튼에서 상대를 추가해 주세요. 추가한 뒤 다시 '나'를 선택하면 돼요.</p><button class="btn primary" type="button" id="addPartner">상대 추가하기</button></div>`;
+      $("addPartner").onclick = () => openSheet(null);
+      return;
+    }
+    if (!st.partner || !others.some(p => p.id === st.partner)) st.partner = others[0].id;
+    const pp = others.find(p => p.id === st.partner);
+    const r = compatibility(ctx.p, pp);
+    $("thread").innerHTML = `<div class="chips scroll">${others.map(p => `<button type="button" class="chip" data-partner="${p.id}" aria-pressed="${p.id === st.partner}">${p.name || p.date}</button>`).join("")}</div>
+      <div class="card">${compatHtml(r, ctx.p.name || "나", pp.name || "상대")}</div>`;
+    return;
+  }
   const name = ctx.p.name || "이분";
   const greet = `<div class="bubble a"><span class="who">상담</span><p>안녕하세요. ${name}의 사주(${[ctx.c.year, ctx.c.month, ctx.c.day, ctx.c.hour].filter(Boolean).map(pname).join(" ")})를 펼쳐 놓았어요. ${ctx.a.strength} 사주이고 용신은 ${ELX(ctx.a.yongEl)}입니다. 아래에서 궁금한 걸 골라 주세요. 대운·세운·월운을 모두 따져서 앞으로 2년 안의 시기를 짚어 드릴게요.</p></div>`;
   $("thread").innerHTML = greet + st.thread.map(t => `<div class="bubble q">${t.q}</div><div class="bubble a"><span class="who">상담</span>${t.a}</div>`).join("");
@@ -251,15 +299,18 @@ function render() {
 function go(tab) { st.tab = tab; try { history.replaceState(null, "", "#" + tab); } catch (e) {} render(); window.scrollTo(0, 0); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-go],[data-shift],[data-tcat],[data-ccat],[data-fcat],[data-d],[data-layer],[data-q]");
+  const t = e.target.closest("[data-go],[data-shift],[data-tcat],[data-ccat],[data-fcat],[data-d],[data-layer],[data-q],[data-date],[data-mode],[data-partner]");
   if (!t) return;
   if (t.dataset.go) return go(t.dataset.go);
   if (t.dataset.shift) { const x = new Date(Date.UTC(st.view[0], st.view[1] - 1, st.view[2] + +t.dataset.shift)); st.view = [x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()]; return render(); }
-  if (t.dataset.tcat) { st.todayCat = t.dataset.tcat; return render(); }
+  if (t.dataset.tcat) { st.todayCat = t.dataset.tcat; st.detailOpen = true; render(); const dt = document.querySelector("#todayBody details"); if (dt) dt.open = true; return; }
+  if (t.dataset.date) { st.view = t.dataset.date.split("-").map(Number); render(); window.scrollTo(0, 0); return; }
   if (t.dataset.ccat) { st.calCat = t.dataset.ccat; return render(); }
   if (t.dataset.fcat) { st.flowCat = t.dataset.fcat; return render(); }
   if (t.dataset.d) { st.view = [st.view[0], st.view[1], +t.dataset.d]; return render(); }
   if (t.dataset.layer) { const id = t.dataset.layer; st.layerOn[id] = !st.layerOn[id]; if (!Object.values(st.layerOn).some(Boolean)) st.layerOn.natal = true; return renderElements(); }
+  if (t.dataset.mode) { st.askMode = t.dataset.mode; return renderAsk(); }
+  if (t.dataset.partner) { st.partner = t.dataset.partner; return renderAsk(); }
   if (t.dataset.q) {
     const q = QUESTIONS.find(x => x.id === t.dataset.q);
     st.thread.push({ q: q.q, a: answer(q.id, ctx) });
