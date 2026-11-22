@@ -1,0 +1,16 @@
+{
+  "name": "나의 만세력",
+  "short_name": "만세력",
+  "description": "사주팔자와 대운·세운·월운·일진을 합산한 운세 달력, 상담형 풀이",
+  "lang": "ko",
+  "start_url": "./#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f1",
+  "theme_color": "#f4f4f1",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

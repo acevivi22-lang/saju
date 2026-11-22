@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>나의 만세력</title>
+<meta name="description" content="사주팔자, 대운·세운·월운·일진을 합산한 100점 운세 달력과 상담형 풀이">
+<meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14181d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="만세력">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="appbar">
+  <div class="who">
+    <h1 id="title">나의 만세력</h1>
+    <span class="sub" id="subtitle"></span>
+  </div>
+  <button class="iconbtn" id="profileBtn" type="button" aria-label="사람 바꾸기·정보 수정">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  </button>
+</header>
+
+<button type="button" class="sample-note" id="sampleNote" hidden>지금은 예시 사주예요. 여기를 눌러 내 생년월일을 넣어 주세요.</button>
+
+<main id="main">
+  <!-- 오늘 -->
+  <section class="view" id="v-today" data-view="today">
+    <nav class="daynav" aria-label="날짜 이동">
+      <button class="btn ghost" type="button" data-shift="-1" aria-label="하루 전">◀</button>
+      <input type="date" id="viewDate" aria-label="날짜 고르기">
+      <button class="btn ghost" type="button" data-shift="1" aria-label="하루 뒤">▶</button>
+      <button class="btn" type="button" id="todayBtn">오늘</button>
+    </nav>
+    <div id="todayBody"></div>
+  </section>
+
+  <!-- 달력 -->
+  <section class="view" id="v-cal" data-view="cal" hidden>
+    <div class="cal-head">
+      <button class="btn ghost" type="button" id="prevMonth" aria-label="이전 달">◀</button>
+      <h2 id="calTitle"></h2>
+      <button class="btn ghost" type="button" id="nextMonth" aria-label="다음 달">▶</button>
+    </div>
+    <div class="chips scroll" id="calCats" role="group" aria-label="보고 싶은 운"></div>
+    <p class="calctx" id="calCtx"></p>
+    <div class="cal" id="cal"></div>
+    <div class="legend" id="legend"></div>
+    <div id="calPick"></div>
+  </section>
+
+  <!-- 흐름 -->
+  <section class="view" id="v-flow" data-view="flow" hidden>
+    <div class="chips scroll" id="flowCats" role="group" aria-label="보고 싶은 운"></div>
+    <div class="card"><h3>대운 · 10년 단위</h3><div class="hscroll"><div class="dwrow" id="dwRow"></div></div></div>
+    <div class="card"><h3 id="yrTitle">세운 · 해마다</h3><div id="yrChart"></div></div>
+    <div class="card"><h3 id="moTitle">월운 · 앞으로 24개월</h3><div id="moChart"></div></div>
+    <div class="card"><h3 id="elTitle">지금의 오행</h3><div class="layers" id="layers"></div><div id="elRows"></div><ul class="notes" id="elNotes"></ul>
+      <p class="muted small">가중치: 원국 글자 1, 대운 천간 1·지지 2, 세운 0.6, 월운 0.4, 일진 0.3. 합·충으로 오행이 바뀌는 경우는 반영하지 않은 단순 합산이에요.</p></div>
+  </section>
+
+  <!-- 풀이 -->
+  <section class="view" id="v-read" data-view="read" hidden>
+    <div class="card" id="chartCard"></div>
+    <div id="readBody"></div>
+  </section>
+
+  <!-- 상담 -->
+  <section class="view" id="v-ask" data-view="ask" hidden>
+    <div class="thread" id="thread"></div>
+    <div class="qchips" id="qchips"></div>
+  </section>
+
+  <footer class="foot">절기는 천문 계산으로 구하고, 태어난 시각은 출생지 경도와 1987·1988년 서머타임을 반영해 보정합니다. 점수는 전통 명리 해석을 규칙으로 옮긴 참고용이에요.</footer>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="화면">
+  <button type="button" data-go="today" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>오늘</span></button>
+  <button type="button" data-go="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>달력</span></button>
+  <button type="button" data-go="flow"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 4-6 5 5"/><path d="M3 21h18"/></svg><span>흐름</span></button>
+  <button type="button" data-go="read"><svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M9 11h6M9 15h6"/></svg><span>풀이</span></button>
+  <button type="button" data-go="ask"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg><span>상담</span></button>
+</nav>
+
+<!-- 사람 관리 시트 -->
+<dialog id="sheet" class="sheet">
+  <div class="sheet-head"><h2 id="sheetTitle">사람</h2><button class="iconbtn" type="button" id="sheetClose" aria-label="닫기">✕</button></div>
+  <ul class="plist" id="plist"></ul>
+  <form id="pform" class="pform">
+    <h3 id="formTitle">새로 추가</h3>
+    <label>이름<input type="text" id="fName" maxlength="20" placeholder="예: 나, 엄마"></label>
+    <label>생년월일 (양력)<input type="date" id="fDate" required min="1900-01-01" max="2100-12-31"></label>
+    <div class="row2">
+      <label>태어난 시각<input type="time" id="fTime"></label>
+      <label class="check"><input type="checkbox" id="fNoTime"> 시각 모름</label>
+    </div>
+    <div class="row2">
+      <label>성별<select id="fGender"><option value="M">남</option><option value="F">여</option></select></label>
+      <label>태어난 곳<select id="fPlace">
+        <option value="127.0">서울·경기·인천</option><option value="127.7">강원(춘천)</option><option value="128.9">강원(강릉)</option>
+        <option value="127.5">충북(청주)</option><option value="127.4">대전·충남</option><option value="127.1">전북(전주)</option>
+        <option value="126.9">광주·전남</option><option value="128.6">대구·경북</option><option value="129.0">부산·울산·경남</option>
+        <option value="126.5">제주</option><option value="135.0">보정 안 함(해외 등)</option></select></label>
+    </div>
+    <label class="check"><input type="checkbox" id="fYaja"> 야자시 적용 (밤 11~12시 출생을 당일로)</label>
+    <p class="muted small">음력 생일은 양력으로 바꿔서 넣어 주세요. 정보는 이 기기에만 저장돼요.</p>
+    <div class="actions">
+      <button class="btn primary" type="submit">저장</button>
+      <button class="btn" type="button" id="fNew">새로 추가</button>
+      <button class="btn danger" type="button" id="fDel" hidden>삭제</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
